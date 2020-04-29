@@ -52,129 +52,175 @@ namespace TextScanner/Internal/PrimitiveScanner {
         let PrimitiveScanner(sc1) = sc;
         sc1.hasNextByte()
 
-    pub def nextInt8(sc: PrimitiveScanner): Int8 & Impure = 
+    pub def nextInt8(sc: PrimitiveScanner): Result[Int8, String] & Impure = 
         import java.util.Scanner.nextByte();
-        let PrimitiveScanner(sc1) = sc;
-        sc1.nextByte()
+        try {
+            let PrimitiveScanner(sc1) = sc;
+            Ok(sc1.nextByte())
+        } catch {
+            case _: ##java.util.InputMismatchException => Err("Err - not an Int8")
+            case _: ##java.util.NoSuchElementException => Err("Err - no more tokens")
+            case _: ##java.lang.IllegalStateException => Err("Err - scanner is closed")
+        }
 
     pub def hasNextInt16(sc: PrimitiveScanner): Bool & Impure = 
         import java.util.Scanner.hasNextShort();
         let PrimitiveScanner(sc1) = sc;
         sc1.hasNextShort()
 
-    pub def nextInt16(sc: PrimitiveScanner): Int16 & Impure = 
+    pub def nextInt16(sc: PrimitiveScanner): Result[Int16, String] & Impure = 
         import java.util.Scanner.nextShort();
-        let PrimitiveScanner(sc1) = sc;
-        sc1.nextShort()
+        try {
+            let PrimitiveScanner(sc1) = sc;
+            Ok(sc1.nextShort())            
+        } catch {
+            case _: ##java.util.InputMismatchException => Err("Err - not an Int16")
+            case _: ##java.util.NoSuchElementException => Err("Err - no more tokens")
+            case _: ##java.lang.IllegalStateException => Err("Err - scanner is closed")
+        }
 
     pub def hasNextInt32(sc: PrimitiveScanner): Bool & Impure = 
         import java.util.Scanner.hasNextInt();
         let PrimitiveScanner(sc1) = sc;
         sc1.hasNextInt()
 
-    pub def nextInt32(sc: PrimitiveScanner): Int32 & Impure = 
+    pub def nextInt32(sc: PrimitiveScanner): Result[Int32, String] & Impure = 
         import java.util.Scanner.nextInt();
-        let PrimitiveScanner(sc1) = sc;
-        sc1.nextInt()
+        try {
+            let PrimitiveScanner(sc1) = sc;
+            Ok(sc1.nextInt())
+        } catch {
+            case _: ##java.util.InputMismatchException => Err("Err - not an Int32")
+            case _: ##java.util.NoSuchElementException => Err("Err - no more tokens")
+            case _: ##java.lang.IllegalStateException => Err("Err - scanner is closed")
+        }
 
     pub def hasNextInt64(sc: PrimitiveScanner): Bool & Impure = 
         import java.util.Scanner.hasNextLong();
         let PrimitiveScanner(sc1) = sc;
         sc1.hasNextLong()
 
-    pub def nextInt64(sc: PrimitiveScanner): Int64 & Impure = 
+    pub def nextInt64(sc: PrimitiveScanner): Result[Int64, String] & Impure = 
         import java.util.Scanner.nextLong();
-        let PrimitiveScanner(sc1) = sc;
-        sc1.nextLong()
+        try { 
+            let PrimitiveScanner(sc1) = sc;
+            Ok(sc1.nextLong())        
+        } catch {
+            case _: ##java.util.InputMismatchException => Err("Err - not an Int64")
+            case _: ##java.util.NoSuchElementException => Err("Err - no more tokens")
+            case _: ##java.lang.IllegalStateException => Err("Err - scanner is closed")
+        }
 
     pub def hasNextBigInt(sc: PrimitiveScanner): Bool & Impure = 
         import java.util.Scanner.hasNextBigInteger();
         let PrimitiveScanner(sc1) = sc;
         sc1.hasNextBigInteger()
 
-    pub def nextBigInt(sc: PrimitiveScanner): BigInt & Impure = 
+    pub def nextBigInt(sc: PrimitiveScanner): Result[BigInt, String] & Impure = 
         import java.util.Scanner.nextBigInteger();
-        let PrimitiveScanner(sc1) = sc;
-        sc1.nextBigInteger()
+        try {
+            let PrimitiveScanner(sc1) = sc;
+            Ok(sc1.nextBigInteger())
+        } catch {
+            case _: ##java.util.InputMismatchException => Err("Err - not a BitInt")
+            case _: ##java.util.NoSuchElementException => Err("Err - no more tokens")
+            case _: ##java.lang.IllegalStateException => Err("Err - scanner is closed")
+        }
 
     pub def hasNextFloat32(sc: PrimitiveScanner): Bool & Impure = 
         import java.util.Scanner.hasNextFloat();
         let PrimitiveScanner(sc1) = sc;
         sc1.hasNextFloat()
 
-    pub def nextFloat32(sc: PrimitiveScanner): Float32 & Impure = 
+    pub def nextFloat32(sc: PrimitiveScanner): Result[Float32, String] & Impure = 
         import java.util.Scanner.nextFloat();
-        let PrimitiveScanner(sc1) = sc;
-        sc1.nextFloat()
+        try {
+            let PrimitiveScanner(sc1) = sc;
+            Ok(sc1.nextFloat())
+        } catch {
+            case _: ##java.util.InputMismatchException => Err("Err - not a Float32")
+            case _: ##java.util.NoSuchElementException => Err("Err - no more tokens")
+            case _: ##java.lang.IllegalStateException => Err("Err - scanner is closed")
+        }
 
     pub def hasNextFloat64(sc: PrimitiveScanner): Bool & Impure = 
         import java.util.Scanner.hasNextDouble();
         let PrimitiveScanner(sc1) = sc;
         sc1.hasNextDouble()
 
-    pub def nextFloat64(sc: PrimitiveScanner): Float64 & Impure = 
+    pub def nextFloat64(sc: PrimitiveScanner): Result[Float64, String] & Impure = 
         import java.util.Scanner.nextDouble();
-        let PrimitiveScanner(sc1) = sc;
-        sc1.nextDouble()
+        try {
+            let PrimitiveScanner(sc1) = sc;
+            Ok(sc1.nextDouble())
+        } catch {
+            case _: ##java.util.InputMismatchException => Err("Err - not a Float64")
+            case _: ##java.util.NoSuchElementException => Err("Err - no more tokens")
+            case _: ##java.lang.IllegalStateException => Err("Err - scanner is closed")
+        }
 
     pub def hasNextBool(sc: PrimitiveScanner): Bool & Impure = 
         import java.util.Scanner.hasNextBoolean();
         let PrimitiveScanner(sc1) = sc;
         sc1.hasNextBoolean()
 
-    pub def nextBool(sc: PrimitiveScanner): Bool & Impure = 
+    pub def nextBool(sc: PrimitiveScanner): Result[Bool, String] & Impure = 
         import java.util.Scanner.nextBoolean();
-        let PrimitiveScanner(sc1) = sc;
-        sc1.nextBoolean()
+        try {
+            let PrimitiveScanner(sc1) = sc;
+            Ok(sc1.nextBoolean())
+        } catch {
+            case _: ##java.util.InputMismatchException => Err("Err - not a Bool")
+            case _: ##java.util.NoSuchElementException => Err("Err - no more tokens")
+            case _: ##java.lang.IllegalStateException => Err("Err - scanner is closed")
+        }
 
     pub def hasNextLine(sc: PrimitiveScanner): Bool & Impure = 
         import java.util.Scanner.hasNextLine();
         let PrimitiveScanner(sc1) = sc;
         sc1.hasNextLine()
 
-    pub def nextLine(sc: PrimitiveScanner): String & Impure = 
+    pub def nextLine(sc: PrimitiveScanner): Result[String, String] & Impure = 
         import java.util.Scanner.nextLine();
-        let PrimitiveScanner(sc1) = sc;
-        sc1.nextLine()
-
-
-    pub def hasNextLiteral(sc: PrimitiveScanner, lit: String): Bool & Impure = 
-        import java.util.Scanner.hasNext(String);
-        let PrimitiveScanner(sc1) = sc;
-        sc1.hasNext(lit)
-
-    pub def nextLiteral(sc: PrimitiveScanner, lit: String): String & Impure = 
-        import java.util.Scanner.next(String);
-        let PrimitiveScanner(sc1) = sc;
-        sc1.next(lit)
+        try {
+            let PrimitiveScanner(sc1) = sc;
+            Ok(sc1.nextLine())
+        } catch {
+            case _: ##java.util.NoSuchElementException => Err("Err - no more tokens")
+            case _: ##java.lang.IllegalStateException => Err("Err - scanner is closed")
+        }
 
 
     /// Warning throws error if pattern is invalid.
-    pub def hasNextMatch(sc: PrimitiveScanner, regex: String): Result[Bool, String] & Impure = 
-        import java.util.Scanner.hasNext(##java.util.regex.Pattern);
-        import java.util.regex.Pattern:compile(String);
+    pub def hasNextMatch(sc: PrimitiveScanner, pattern: String): Result[Bool, String] & Impure = 
+        import java.util.Scanner.hasNext(String);
         try {
             let PrimitiveScanner(sc1) = sc;
-            let patt: ##java.util.regex.Pattern = compile(regex);
-            Ok(sc1.hasNext(patt))
+            Ok(sc1.hasNext(pattern))
         } catch {
-            case _: ##java.util.regex.PatternSyntaxException => Err("TextScanner/Internal.PrimitiveScanner.hasNextMatch - pattern syntax error")
-            case _: ##java.lang.IllegalArgumentException =>  Err("TextScanner/Internal.PrimitiveScanner.hasNextMatch - illegal argument error")
+            case _: ##java.lang.IllegalStateException => Err("Err - scanner is closed")
         }
 
 
-    pub def nextMatch(sc: PrimitiveScanner, regex: String): Result[String, String] & Impure = 
-        import java.util.Scanner.next(##java.util.regex.Pattern);        
-        import java.util.regex.Pattern:compile(String);
+    pub def nextMatch(sc: PrimitiveScanner, pattern: String): Result[String, String] & Impure = 
+        import java.util.Scanner.next(String);
         try {
             let PrimitiveScanner(sc1) = sc;
-            let patt: ##java.util.regex.Pattern = compile(regex);
-            Ok(sc1.next(patt))
+            Ok(sc1.next(pattern))
         } catch {
-            case _: ##java.util.regex.PatternSyntaxException => Err("TextScanner/Internal/PrimitiveScanner.nextMatch - pattern syntax error")
-            case _: ##java.lang.IllegalArgumentException =>  Err("TextScanner/Internal/PrimitiveScanner.nextMatch - illegal argument error")
+            case _: ##java.util.NoSuchElementException => Err("Err - no more tokens")
+            case _: ##java.lang.IllegalStateException => Err("Err - scanner is closed")
         }
 
+    pub def skip(sc: PrimitiveScanner, pattern: String): Result[Unit, String] & Impure = 
+        import java.util.Scanner.skip(String);
+        try {
+            let PrimitiveScanner(sc1) = sc;
+            sc1.skip(pattern);
+            Ok()
+        } catch {
+            case _: ##java.lang.IllegalStateException => Err("Err - scanner is closed")
+        }
 
 
 
