@@ -25,9 +25,21 @@ namespace TextScanner {
     /// Because java.util.Scanner does not allow backtracking we cannot implement
     /// an `alt` combinator. 
     enum ParseResult[a] {
-        case PFatal(String),
+        case PFatal(String, String),
         case POk(a)
     }
+
+    def nextThreeLines(ps: PrimScanner): String & Impure = 
+        let x = TextScanner/Internal/PrimitiveScanner.nextLine(ps);
+        let y = TextScanner/Internal/PrimitiveScanner.nextLine(ps);
+        let z = TextScanner/Internal/PrimitiveScanner.nextLine(ps);
+        match (x, y, z) { 
+            case (Ok(a), Ok(b), Ok(c))  => String.unlines(a :: b :: c :: Nil)
+            case (Ok(a), Ok(b), _)      => String.unlines(a :: b :: Nil)
+            case (Ok(a), _, _)          => a
+            case (_, _, _)              => ""
+        }
+
 
     pub enum Scanner[a] {
         case Scanner(PrimScanner -> ParseResult[a] & Impure)
@@ -42,7 +54,7 @@ namespace TextScanner {
         let ps = TextScanner/Internal/PrimitiveScanner.fromString(s);
         match f1(ps) {
             case POk(a) => Ok(a)
-            case PFatal(msg) => Err(msg)
+            case PFatal(msg, rest) => Err(msg + String.lineSeparator() + "Input:" + String.lineSeparator() + rest)
         }
 
     pub def parseFile(s: Scanner[a], path: System.FilePath, cs: System.Charset): Result[a, String] & Impure = 
@@ -55,13 +67,13 @@ namespace TextScanner {
         Scanner(_ -> POk(x) as & Impure)
 
     pub def throwError(msg: String): Scanner[a] = 
-        Scanner(_ -> PFatal(msg) as & Impure)
+        Scanner(ps -> PFatal(msg, nextThreeLines(ps)) as & Impure)
 
     pub def swapError(msg: String, ma: Scanner[a]): Scanner[a] = 
         Scanner(ps -> 
             let Scanner(f1) = ma;
             match f1(ps) {
-                case PFatal(_) => PFatal(msg)
+                case PFatal(_, rest) => PFatal(msg, rest)
                 case POk(a) => POk(a)
             }
         )
@@ -205,7 +217,7 @@ namespace TextScanner {
         Scanner(ps -> 
             match f(ps) {
                 case Ok(a) => POk(a)
-                case Err(msg) => PFatal(msg)
+                case Err(msg) => PFatal(msg, nextThreeLines(ps))
             }
         )
 
@@ -309,16 +321,16 @@ namespace TextScanner {
     pub def count(n: Int32, sc: Scanner[a]): Scanner[List[a]] = 
         Scanner(ps -> 
             let Scanner(f1) = sc;
-            countHelper(ps, n, f1, 0, s -> PFatal(s), xs -> POk(xs))
+            countHelper(ps, n, f1, 0, (s,t) -> PFatal(s,t), xs -> POk(xs))
         )
 
-    def countHelper(ps: PrimScanner, n: Int32, f1: PrimScanner -> ParseResult[a] & Impure, i: Int32, fk: ErrMsg -> ParseResult[List[a]], sk: List[a] -> ParseResult[List[a]]): ParseResult[List[a]] & Impure = 
-        if (i >= n)
+    def countHelper(ps: PrimScanner, n: Int32, f1: PrimScanner -> ParseResult[a] & Impure, i: Int32, fk: (ErrMsg, String) -> ParseResult[List[a]], sk: List[a] -> ParseResult[List[a]]): ParseResult[List[a]] & Impure = 
+        if (i >= n) 
             sk(Nil)
         else {
             match f1(ps) {
                 case POk(a) => countHelper(ps, n, f1, i+1, fk, xs -> sk(a :: xs))
-                case PFatal(msg) => fk(msg)
+                case PFatal(msg, rest) => fk(msg, rest)
             }
         }
 
