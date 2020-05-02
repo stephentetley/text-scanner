@@ -15,6 +15,7 @@
  */
 
 use TextScanner/Internal.{PrimitiveScanner => PrimScanner};
+use TextScanner/Internal/PrimitiveScanner.{quoteLiteral};
 use Either.{mapLeft};
 
 namespace TextScanner {
@@ -46,13 +47,15 @@ namespace TextScanner {
     }
 
     
-    pub def runWithString(ma: Scanner[a], s: String): Result[a, String] = 
-        runWithStringHelper(ma, s) as & Pure
+    pub def parseString(ma: Scanner[a], s: String): Result[a, String] = 
+        parseStringHelper(ma, s) as & Pure
     
-    def runWithStringHelper(ma: Scanner[a], s: String): Result[a, String] & Impure = 
+    def parseStringHelper(ma: Scanner[a], s: String): Result[a, String] & Impure = 
         let Scanner(f1) = ma;
         let ps = TextScanner/Internal/PrimitiveScanner.fromString(s);
-        match f1(ps) {
+        let ans = f1(ps);
+        TextScanner/Internal/PrimitiveScanner.close(ps);        
+        match ans {
             case POk(a) => Ok(a)
             case PFatal(msg, rest) => Err(msg + String.lineSeparator() + "Input:" + String.lineSeparator() + rest)
         }
@@ -60,7 +63,7 @@ namespace TextScanner {
     pub def parseFile(s: Scanner[a], path: System.FilePath, cs: System.Charset): Result[a, String] & Impure = 
         match System/File.readFile(path, cs) {
             case Err(_) => Err("File error")
-            case Ok(text) => runWithString(s, text)
+            case Ok(text) => parseString(s, text)
         }
 
     pub def return(x: a): Scanner[a] = 
@@ -210,10 +213,10 @@ namespace TextScanner {
             case Some(x) => return(x)
         }
 
-    def liftHasNext(f: PrimScanner -> Bool & Impure): Scanner[Bool] = 
+    def liftPrimHasNext(f: PrimScanner -> Bool & Impure): Scanner[Bool] = 
         Scanner(ps -> POk(f(ps)))
 
-    def liftNext(f: PrimScanner -> Result[a, String] & Impure): Scanner[a] = 
+    def liftPrimNext(f: PrimScanner -> Result[a, String] & Impure): Scanner[a] = 
         Scanner(ps -> 
             match f(ps) {
                 case Ok(a) => POk(a)
@@ -221,101 +224,133 @@ namespace TextScanner {
             }
         )
 
-    def liftHasNextResult(f: PrimScanner -> Result[Bool, String] & Impure): Scanner[Bool] = 
-        liftNext(f) 
+    def liftPrimHasNextResult(f: PrimScanner -> Result[Bool, String] & Impure): Scanner[Bool] = 
+        liftPrimNext(f) 
 
     pub def hasNext(): Scanner[Bool] = 
-        liftHasNext(TextScanner/Internal/PrimitiveScanner.hasNext)
+        liftPrimHasNext(TextScanner/Internal/PrimitiveScanner.hasNext)
 
     pub def next(): Scanner[String] = 
-        liftNext(TextScanner/Internal/PrimitiveScanner.next)
+        liftPrimNext(TextScanner/Internal/PrimitiveScanner.next)
 
     pub def hasNextInt8(): Scanner[Bool] = 
-        liftHasNext(TextScanner/Internal/PrimitiveScanner.hasNextInt8)
+        liftPrimHasNext(TextScanner/Internal/PrimitiveScanner.hasNextInt8)
 
     pub def nextInt8(): Scanner[Int8] = 
-        liftNext(TextScanner/Internal/PrimitiveScanner.nextInt8)
+        liftPrimNext(TextScanner/Internal/PrimitiveScanner.nextInt8)
 
     pub def hasNextInt16(): Scanner[Bool] = 
-        liftHasNext(TextScanner/Internal/PrimitiveScanner.hasNextInt16)
+        liftPrimHasNext(TextScanner/Internal/PrimitiveScanner.hasNextInt16)
 
     pub def nextInt16(): Scanner[Int16] = 
-        liftNext(TextScanner/Internal/PrimitiveScanner.nextInt16)
+        liftPrimNext(TextScanner/Internal/PrimitiveScanner.nextInt16)
 
     pub def hasNextInt32(): Scanner[Bool] = 
-        liftHasNext(TextScanner/Internal/PrimitiveScanner.hasNextInt32)
+        liftPrimHasNext(TextScanner/Internal/PrimitiveScanner.hasNextInt32)
 
     pub def nextInt32(): Scanner[Int32] = 
-        liftNext(TextScanner/Internal/PrimitiveScanner.nextInt32)
+        liftPrimNext(TextScanner/Internal/PrimitiveScanner.nextInt32)
 
     pub def hasNextInt64(): Scanner[Bool] = 
-        liftHasNext(TextScanner/Internal/PrimitiveScanner.hasNextInt64)
+        liftPrimHasNext(TextScanner/Internal/PrimitiveScanner.hasNextInt64)
 
     pub def nextInt64(): Scanner[Int64] = 
-        liftNext(TextScanner/Internal/PrimitiveScanner.nextInt64)
+        liftPrimNext(TextScanner/Internal/PrimitiveScanner.nextInt64)
 
     pub def hasNextBigInt(): Scanner[Bool] = 
-        liftHasNext(TextScanner/Internal/PrimitiveScanner.hasNextBigInt)
+        liftPrimHasNext(TextScanner/Internal/PrimitiveScanner.hasNextBigInt)
 
     pub def nextBigInt(): Scanner[BigInt] = 
-        liftNext(TextScanner/Internal/PrimitiveScanner.nextBigInt)
+        liftPrimNext(TextScanner/Internal/PrimitiveScanner.nextBigInt)
 
     pub def hasNextFloat32(): Scanner[Bool] = 
-        liftHasNext(TextScanner/Internal/PrimitiveScanner.hasNextFloat32)
+        liftPrimHasNext(TextScanner/Internal/PrimitiveScanner.hasNextFloat32)
 
     pub def nextFloat32(): Scanner[Float32] = 
-        liftNext(TextScanner/Internal/PrimitiveScanner.nextFloat32)
+        liftPrimNext(TextScanner/Internal/PrimitiveScanner.nextFloat32)
 
     pub def hasNextFloat64(): Scanner[Bool] = 
-        liftHasNext(TextScanner/Internal/PrimitiveScanner.hasNextFloat64)
+        liftPrimHasNext(TextScanner/Internal/PrimitiveScanner.hasNextFloat64)
 
     pub def nextFloat64(): Scanner[Float64] = 
-        liftNext(TextScanner/Internal/PrimitiveScanner.nextFloat64)
+        liftPrimNext(TextScanner/Internal/PrimitiveScanner.nextFloat64)
 
     pub def hasNextBool(): Scanner[Bool] = 
-        liftHasNext(TextScanner/Internal/PrimitiveScanner.hasNextBool)
+        liftPrimHasNext(TextScanner/Internal/PrimitiveScanner.hasNextBool)
 
     pub def nextBool(): Scanner[Bool] = 
-        liftNext(TextScanner/Internal/PrimitiveScanner.nextBool)
+        liftPrimNext(TextScanner/Internal/PrimitiveScanner.nextBool)
 
     pub def hasNextLine(): Scanner[Bool] = 
-        liftHasNext(TextScanner/Internal/PrimitiveScanner.hasNextLine)
+        liftPrimHasNext(TextScanner/Internal/PrimitiveScanner.hasNextLine)
 
-    pub def restOfLine(): Scanner[String] = 
-        liftNext(TextScanner/Internal/PrimitiveScanner.nextLine)
+    pub def nextLine(): Scanner[String] = 
+        liftPrimNext(TextScanner/Internal/PrimitiveScanner.nextLine)
 
     pub def hasNextMatch(pattern: String): Scanner[Bool] = 
-        liftHasNextResult(ps -> TextScanner/Internal/PrimitiveScanner.hasNextMatch(ps, pattern)) 
+        liftPrimHasNextResult(ps -> TextScanner/Internal/PrimitiveScanner.hasNextMatch(ps, pattern)) 
         
     pub def nextMatch(pattern: String): Scanner[String] = 
-        liftNext(ps -> TextScanner/Internal/PrimitiveScanner.nextMatch(ps, pattern))
+        liftPrimNext(ps -> TextScanner/Internal/PrimitiveScanner.nextMatch(ps, pattern))
 
+    // `s` should not contain spaces
+    pub def hasNextLiteral(s: String): Scanner[Bool] = 
+        hasNextMatch(quoteLiteral(s))
     
-    pub def hasNextToken(s: String): Scanner[Bool] = 
-        liftHasNextResult(ps -> TextScanner/Internal/PrimitiveScanner.hasNextToken(ps, s)) 
-        
-    pub def nextToken(s: String): Scanner[Unit] = 
-        liftNext(ps -> TextScanner/Internal/PrimitiveScanner.nextToken(ps, s)) |> ignore
+    // `s` should not contain space
+    pub def nextLiteral(s: String): Scanner[Unit] = 
+        nextMatch(quoteLiteral(s)) |> ignore
 
-    pub def tryToken(s: String): Scanner[Option[Unit]] = 
-        ifS(hasNextToken(s), map(Some, nextToken(s)), return(None))
+    pub def tryMatch(pattern: String): Scanner[Option[String]] = 
+        ifS(hasNextMatch(pattern), map(Some, nextMatch(pattern)), return(None))
 
-    pub def skip(pattern: String): Scanner[Unit] = 
-        liftNext(ps -> TextScanner/Internal/PrimitiveScanner.skip(ps, pattern))
+    pub def tryLiteral(s: String): Scanner[Option[Unit]] = 
+        tryMatch(quoteLiteral(s)) |> map(Option.map(_ -> ()))
+
+    pub def skipMatch(pattern: String): Scanner[Unit] = 
+        liftPrimNext(ps -> TextScanner/Internal/PrimitiveScanner.skip(ps, pattern))
 
     pub def skipString(s: String): Scanner[Unit] = 
-        liftNext(ps -> TextScanner/Internal/PrimitiveScanner.skipString(ps, s))
+        skipMatch(quoteLiteral(s))
 
-    pub def findWithinHorizon(pattern: String, horizon: Int32): Scanner[Option[String]] = 
-        liftNext(ps -> TextScanner/Internal/PrimitiveScanner.findWithinHorizon(ps, pattern, horizon))
+    pub def findMatch(pattern: String): Scanner[Option[String]] = 
+        findMatchWithinHorizon(pattern, 0)
 
-    pub def tryString(s: String): Scanner[Option[String]] = 
-        use TextScanner/Internal/PrimitiveScanner.{quoteLiteral => quote};
-        findWithinHorizon(quote(s), String.length(s))
+    pub def findLiteral(s: String): Scanner[Option[Unit]] = 
+        findLiteralWithinHorizon(s, 0) |> map(Option.map(_ -> ()))
 
-    /// No hasNextString
-    pub def nextString(s: String): Scanner[String] = 
-        tryString(s) |> fromSome |> swapError("nextString: not '" + s + "'")
+    pub def anchorMatch(pattern: String): Scanner[String] = 
+        let* a = findMatchWithinHorizon(pattern, 0);
+        match a { 
+            case None => throwError("anchorMatch")
+            case Some(x) => return(x)
+        }
+        
+    pub def anchorLiteral(s: String): Scanner[Unit] = 
+        anchorMatch(quoteLiteral(s)) |> ignore
+
+
+    pub def findMatchWithinHorizon(pattern: String, horizon: Int32): Scanner[Option[String]] = 
+        liftPrimNext(ps -> TextScanner/Internal/PrimitiveScanner.findWithinHorizon(ps, pattern, horizon))
+
+    pub def findLiteralWithinHorizon(s: String, horizon: Int32): Scanner[Option[Unit]] = 
+        findMatchWithinHorizon(quoteLiteral(s), horizon) |> map(Option.map(_ -> ()))
+
+    pub def findMatchInLine(pattern: String): Scanner[Option[String]] = 
+        liftPrimNext(ps -> TextScanner/Internal/PrimitiveScanner.findInLine(ps, pattern))
+
+    pub def findLiteralInLine(s: String): Scanner[Option[Unit]] = 
+        findMatchInLine(quoteLiteral(s)) |> map(Option.map(_ -> ()))
+
+    pub def anchorMatchInLine(pattern: String): Scanner[String] = 
+        let* a = findMatchInLine(pattern);
+        match a { 
+            case None => throwError("anchorMatchInLine")
+            case Some(x) => return(x)
+        }
+        
+    pub def anchorLiteralInLine(s: String): Scanner[Unit] = 
+        anchorMatchInLine(quoteLiteral(s)) |> ignore
 
 
     pub def count(n: Int32, sc: Scanner[a]): Scanner[List[a]] = 

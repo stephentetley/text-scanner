@@ -25,10 +25,17 @@ namespace TextScanner/Internal {
 
 namespace TextScanner/Internal/PrimitiveScanner {
 
+    /// Note Scanners typically tim leading space not trailing space...
 
     pub def fromString(s: String): PrimitiveScanner & Impure = 
         import new java.util.Scanner(String) as newScanner;
         PrimitiveScanner(newScanner(s)) 
+
+
+    pub def close(sc: PrimitiveScanner): Unit & Impure = 
+        import java.util.Scanner.close();
+        let PrimitiveScanner(sc1) = sc;
+        sc1.close()
 
     pub def hasNext(sc: PrimitiveScanner): Bool & Impure = 
         import java.util.Scanner.hasNext();
@@ -214,14 +221,7 @@ namespace TextScanner/Internal/PrimitiveScanner {
         import java.util.regex.Pattern:quote(String);
         quote(s) as & Pure
 
-    /// Should not contain whitespace
-    pub def hasNextToken(sc: PrimitiveScanner, s: String): Result[Bool, String] & Impure = 
-        hasNextMatch(sc, quoteLiteral(s))
-
-    /// Should not contain whitespace
-    pub def nextToken(sc: PrimitiveScanner, s: String): Result[String, String] & Impure = 
-        nextMatch(sc, quoteLiteral(s))
-
+    
     pub def skip(sc: PrimitiveScanner, pattern: String): Result[Unit, String] & Impure = 
         import java.util.Scanner.skip(String);
         try {
@@ -232,9 +232,20 @@ namespace TextScanner/Internal/PrimitiveScanner {
             case _: ##java.lang.IllegalStateException => Err("Err - scanner is closed")
         }
 
-    pub def skipString(sc: PrimitiveScanner, s: String): Result[Unit, String] & Impure = 
-        skip(sc, quoteLiteral(s))
-
+    pub def findInLine(sc: PrimitiveScanner, pattern: String): Result[Option[String], String] & Impure=
+        import java.util.Scanner.findInLine(String);
+        let PrimitiveScanner(sc1) = sc;
+        try {
+            let s = sc1.findInLine(pattern);
+            if (isNull(s)) 
+                Ok(None) 
+            else 
+                Ok(Some(s))
+        } catch {
+            case _: ##java.lang.IllegalArgumentException => Err("Err - illegal argument")
+            case _: ##java.lang.IllegalStateException => Err("Err - scanner is closed")
+        }
+    
     pub def findWithinHorizon(sc: PrimitiveScanner, pattern: String, horizon: Int32): Result[Option[String], String] & Impure=
         import java.util.Scanner.findWithinHorizon(String, Int32);
         let PrimitiveScanner(sc1) = sc;
@@ -248,5 +259,5 @@ namespace TextScanner/Internal/PrimitiveScanner {
             case _: ##java.lang.IllegalArgumentException => Err("Err - illegal argument")
             case _: ##java.lang.IllegalStateException => Err("Err - scanner is closed")
         }
-    
+
 }
