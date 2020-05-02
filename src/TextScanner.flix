@@ -173,6 +173,9 @@ namespace TextScanner {
             }
         )
 
+    def liftHasNextResult(f: PrimScanner -> Result[Bool, String] & Impure): Scanner[Bool] = 
+        liftNext(f) 
+
     pub def hasNext(): Scanner[Bool] = 
         liftHasNext(TextScanner/Internal/PrimitiveScanner.hasNext)
 
@@ -233,29 +236,24 @@ namespace TextScanner {
     pub def nextLine(): Scanner[String] = 
         liftNext(TextScanner/Internal/PrimitiveScanner.nextLine)
 
-    pub def hasNextMatch(pattern: String): Scanner[a] = 
-        Scanner(ps -> 
-            match TextScanner/Internal/PrimitiveScanner.hasNextMatch(ps, pattern) {
-                case Ok(a) => POk(a)
-                case Err(msg) => PFatal(msg)
-            }
-        )
-
+    pub def hasNextMatch(pattern: String): Scanner[Bool] = 
+        liftHasNextResult(ps -> TextScanner/Internal/PrimitiveScanner.hasNextMatch(ps, pattern)) 
+        
     pub def nextMatch(pattern: String): Scanner[String] = 
-        Scanner(ps -> 
-            match TextScanner/Internal/PrimitiveScanner.nextMatch(ps, pattern) {
-                case Ok(a) => POk(a)
-                case Err(msg) => PFatal(msg)
-            }
-        )
+        liftNext(ps -> TextScanner/Internal/PrimitiveScanner.nextMatch(ps, pattern))
+
+    
+    pub def hasNextString(s: String): Scanner[Bool] = 
+        liftHasNextResult(ps -> TextScanner/Internal/PrimitiveScanner.hasNextString(ps, s)) 
+        
+    pub def nextString(s: String): Scanner[String] = 
+        liftNext(ps -> TextScanner/Internal/PrimitiveScanner.nextString(ps, s))
 
     pub def skip(pattern: String): Scanner[Unit] = 
-        Scanner(ps -> 
-            match TextScanner/Internal/PrimitiveScanner.skip(ps, pattern) {
-                case Ok(a) => POk(a)
-                case Err(msg) => PFatal(msg)
-            }
-        )
+        liftNext(ps -> TextScanner/Internal/PrimitiveScanner.skip(ps, pattern))
+
+    pub def skipString(s: String): Scanner[Unit] = 
+        liftNext(ps -> TextScanner/Internal/PrimitiveScanner.skipString(ps, s))
 
     pub def count(n: Int32, sc: Scanner[a]): Scanner[List[a]] = 
         Scanner(ps -> 

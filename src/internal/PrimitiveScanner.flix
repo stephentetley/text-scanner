@@ -201,7 +201,6 @@ namespace TextScanner/Internal/PrimitiveScanner {
             case _: ##java.lang.IllegalStateException => Err("Err - scanner is closed")
         }
 
-
     pub def nextMatch(sc: PrimitiveScanner, pattern: String): Result[String, String] & Impure = 
         import java.util.Scanner.next(String);
         try {
@@ -211,6 +210,16 @@ namespace TextScanner/Internal/PrimitiveScanner {
             case _: ##java.util.NoSuchElementException => Err("Err - no more tokens")
             case _: ##java.lang.IllegalStateException => Err("Err - scanner is closed")
         }
+
+    def quoteLiteral(s: String): String = 
+        import java.util.regex.Pattern:quote(String);
+        quote(s) as & Pure
+
+    pub def hasNextString(sc: PrimitiveScanner, s: String): Result[Bool, String] & Impure = 
+        hasNextMatch(sc, quoteLiteral(s))
+
+    pub def nextString(sc: PrimitiveScanner, s: String): Result[String, String] & Impure = 
+        nextMatch(sc, quoteLiteral(s))
 
     pub def skip(sc: PrimitiveScanner, pattern: String): Result[Unit, String] & Impure = 
         import java.util.Scanner.skip(String);
@@ -222,6 +231,6 @@ namespace TextScanner/Internal/PrimitiveScanner {
             case _: ##java.lang.IllegalStateException => Err("Err - scanner is closed")
         }
 
-
-
+    pub def skipString(sc: PrimitiveScanner, s: String): Result[Unit, String] & Impure = 
+        skip(sc, quoteLiteral(s))
 }
