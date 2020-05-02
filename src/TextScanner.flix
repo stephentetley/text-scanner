@@ -37,7 +37,7 @@ namespace TextScanner {
     pub def runWithString(ma: Scanner[a], s: String): Result[a, String] = 
         runWithStringHelper(ma, s) as & Pure
     
-    pub def runWithStringHelper(ma: Scanner[a], s: String): Result[a, String] & Impure = 
+    def runWithStringHelper(ma: Scanner[a], s: String): Result[a, String] & Impure = 
         let Scanner(f1) = ma;
         let ps = TextScanner/Internal/PrimitiveScanner.fromString(s);
         match f1(ps) {
@@ -97,6 +97,16 @@ namespace TextScanner {
 
     pub def flatMap(k: a -> Scanner[b], ma: Scanner[a]): Scanner[b] = bind(ma, k)
 
+    pub def seqLeft(ma :Scanner[a], mb: Scanner[b]): Scanner[a] = 
+        let* a = ma;
+        let* _ = mb;
+        return(a)
+
+    pub def seqRight(ma :Scanner[a], mb: Scanner[b]): Scanner[b] = 
+        let* _ = ma;
+        let* b = mb;
+        return(b)
+
     pub def when(ma: Scanner[Bool], mb: Scanner[Unit]): Scanner[Unit] = 
         let selector = map(x -> if (x) Right(()) else Left(()), ma);
         let effect   = map((a,_) -> a, mb);
@@ -139,6 +149,18 @@ namespace TextScanner {
     pub def while(s: Scanner[Bool]): Scanner[Unit] = 
         let* a = s;
         if (!a) return() else while(s)
+
+
+    pub def countWhile(s: Scanner[Bool]): Scanner[Int32] = 
+        countWhileHelper(s, 0)
+
+    def countWhileHelper(s: Scanner[Bool], n: Int32): Scanner[Int32] = 
+        let* a = s;
+        if (!a) return(n) else countWhileHelper(s, n+1)
+
+    pub def ignore(s: Scanner[a]): Scanner[Unit] = 
+        let* _ = s;
+        return()
 
     def liftHasNext(f: PrimScanner -> Bool & Impure): Scanner[Bool] = 
         Scanner(ps -> POk(f(ps)))
