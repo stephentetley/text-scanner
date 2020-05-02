@@ -183,6 +183,10 @@ namespace TextScanner {
             case Err(msg) => throwError(msg)
         }
 
+    pub def liftAction( f: () -> Unit & Impure): Scanner[Unit] =
+        Scanner(_ -> { f(); POk() })
+
+
     pub def any(p: a -> Scanner[Bool], xs: List[a]): Scanner[Bool] = 
         List.foldRight((a,b) -> or(b, p(a)), return(false),  xs)
 
@@ -316,8 +320,8 @@ namespace TextScanner {
     pub def findMatch(pattern: String): Scanner[Option[String]] = 
         findMatchWithinHorizon(pattern, 0)
 
-    pub def findLiteral(s: String): Scanner[Option[Unit]] = 
-        findLiteralWithinHorizon(s, 0) |> map(Option.map(_ -> ()))
+    pub def findString(s: String): Scanner[Option[Unit]] = 
+        findStringWithinHorizon(s, 0)
 
     pub def anchorMatch(pattern: String): Scanner[String] = 
         let* a = findMatchWithinHorizon(pattern, 0);
@@ -326,20 +330,22 @@ namespace TextScanner {
             case Some(x) => return(x)
         }
         
-    pub def anchorLiteral(s: String): Scanner[Unit] = 
+    pub def anchorString(s: String): Scanner[Unit] = 
         anchorMatch(quoteLiteral(s)) |> ignore
 
 
     pub def findMatchWithinHorizon(pattern: String, horizon: Int32): Scanner[Option[String]] = 
         liftPrimNext(ps -> TextScanner/Internal/PrimitiveScanner.findWithinHorizon(ps, pattern, horizon))
 
-    pub def findLiteralWithinHorizon(s: String, horizon: Int32): Scanner[Option[Unit]] = 
+    /// can have spaces 
+    pub def findStringWithinHorizon(s: String, horizon: Int32): Scanner[Option[Unit]] = 
         findMatchWithinHorizon(quoteLiteral(s), horizon) |> map(Option.map(_ -> ()))
 
     pub def findMatchInLine(pattern: String): Scanner[Option[String]] = 
         liftPrimNext(ps -> TextScanner/Internal/PrimitiveScanner.findInLine(ps, pattern))
 
-    pub def findLiteralInLine(s: String): Scanner[Option[Unit]] = 
+    /// can have spaces 
+    pub def findStringInLine(s: String): Scanner[Option[Unit]] = 
         findMatchInLine(quoteLiteral(s)) |> map(Option.map(_ -> ()))
 
     pub def anchorMatchInLine(pattern: String): Scanner[String] = 
@@ -349,7 +355,8 @@ namespace TextScanner {
             case Some(x) => return(x)
         }
         
-    pub def anchorLiteralInLine(s: String): Scanner[Unit] = 
+    /// can have spaces        
+    pub def anchorStringInLine(s: String): Scanner[Unit] = 
         anchorMatchInLine(quoteLiteral(s)) |> ignore
 
 
