@@ -45,11 +45,27 @@ namespace TextScanner {
             case PFatal(msg) => Err(msg)
         }
 
+    pub def parseFile(s: Scanner[a], path: System.FilePath, cs: System.Charset): Result[a, String] & Impure = 
+        match System/File.readFile(path, cs) {
+            case Err(_) => Err("File error")
+            case Ok(text) => runWithString(s, text)
+        }
+
     pub def return(x: a): Scanner[a] = 
         Scanner(_ -> POk(x) as & Impure)
 
     pub def throwError(msg: String): Scanner[a] = 
         Scanner(_ -> PFatal(msg) as & Impure)
+
+    pub def swapError(msg: String, ma: Scanner[a]): Scanner[a] = 
+        Scanner(ps -> 
+            let Scanner(f1) = ma;
+            match f1(ps) {
+                case PFatal(_) => PFatal(msg)
+                case POk(a) => POk(a)
+            }
+        )
+
 
     pub def map(f: a -> b, ma: Scanner[a]): Scanner[b] = 
         Scanner(ps -> 
@@ -139,6 +155,19 @@ namespace TextScanner {
             case None => d
         }
 
+    pub def fromSome(ma: Scanner[Option[a]]): Scanner[a] = 
+        let* a = ma;
+        match a { 
+            case Some(x) => return(x)
+            case None => throwError("fromSome")
+        }
+
+    pub def liftResult(x: Result[t, String]): Scanner[t] =
+        match x { 
+            case Ok(a) => return(a)
+            case Err(msg) => throwError(msg)
+        }
+
     pub def any(p: a -> Scanner[Bool], xs: List[a]): Scanner[Bool] = 
         List.foldRight((a,b) -> or(b, p(a)), return(false),  xs)
 
@@ -161,6 +190,13 @@ namespace TextScanner {
     pub def ignore(s: Scanner[a]): Scanner[Unit] = 
         let* _ = s;
         return()
+
+    pub def alt(s1: Scanner[Option[a]], s2: Scanner[Option[a]]): Scanner[a] = 
+        let* a = s1;
+        match a { 
+            case None => fromSome(s2)
+            case Some(x) => return(x)
+        }
 
     def liftHasNext(f: PrimScanner -> Bool & Impure): Scanner[Bool] = 
         Scanner(ps -> POk(f(ps)))
@@ -233,7 +269,7 @@ namespace TextScanner {
     pub def hasNextLine(): Scanner[Bool] = 
         liftHasNext(TextScanner/Internal/PrimitiveScanner.hasNextLine)
 
-    pub def nextLine(): Scanner[String] = 
+    pub def restOfLine(): Scanner[String] = 
         liftNext(TextScanner/Internal/PrimitiveScanner.nextLine)
 
     pub def hasNextMatch(pattern: String): Scanner[Bool] = 
@@ -243,17 +279,32 @@ namespace TextScanner {
         liftNext(ps -> TextScanner/Internal/PrimitiveScanner.nextMatch(ps, pattern))
 
     
-    pub def hasNextString(s: String): Scanner[Bool] = 
-        liftHasNextResult(ps -> TextScanner/Internal/PrimitiveScanner.hasNextString(ps, s)) 
+    pub def hasNextToken(s: String): Scanner[Bool] = 
+        liftHasNextResult(ps -> TextScanner/Internal/PrimitiveScanner.hasNextToken(ps, s)) 
         
-    pub def nextString(s: String): Scanner[String] = 
-        liftNext(ps -> TextScanner/Internal/PrimitiveScanner.nextString(ps, s))
+    pub def nextToken(s: String): Scanner[Unit] = 
+        liftNext(ps -> TextScanner/Internal/PrimitiveScanner.nextToken(ps, s)) |> ignore
+
+    pub def tryToken(s: String): Scanner[Option[Unit]] = 
+        ifS(hasNextToken(s), map(Some, nextToken(s)), return(None))
 
     pub def skip(pattern: String): Scanner[Unit] = 
         liftNext(ps -> TextScanner/Internal/PrimitiveScanner.skip(ps, pattern))
 
     pub def skipString(s: String): Scanner[Unit] = 
         liftNext(ps -> TextScanner/Internal/PrimitiveScanner.skipString(ps, s))
+
+    pub def findWithinHorizon(pattern: String, horizon: Int32): Scanner[Option[String]] = 
+        liftNext(ps -> TextScanner/Internal/PrimitiveScanner.findWithinHorizon(ps, pattern, horizon))
+
+    pub def tryString(s: String): Scanner[Option[String]] = 
+        use TextScanner/Internal/PrimitiveScanner.{quoteLiteral => quote};
+        findWithinHorizon(quote(s), String.length(s))
+
+    /// No hasNextString
+    pub def nextString(s: String): Scanner[String] = 
+        tryString(s) |> fromSome |> swapError("nextString: not '" + s + "'")
+
 
     pub def count(n: Int32, sc: Scanner[a]): Scanner[List[a]] = 
         Scanner(ps -> 

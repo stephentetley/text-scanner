@@ -26,7 +26,6 @@ namespace TextScanner/Internal {
 namespace TextScanner/Internal/PrimitiveScanner {
 
 
-
     pub def fromString(s: String): PrimitiveScanner & Impure = 
         import new java.util.Scanner(String) as newScanner;
         PrimitiveScanner(newScanner(s)) 
@@ -211,14 +210,16 @@ namespace TextScanner/Internal/PrimitiveScanner {
             case _: ##java.lang.IllegalStateException => Err("Err - scanner is closed")
         }
 
-    def quoteLiteral(s: String): String = 
+    pub def quoteLiteral(s: String): String = 
         import java.util.regex.Pattern:quote(String);
         quote(s) as & Pure
 
-    pub def hasNextString(sc: PrimitiveScanner, s: String): Result[Bool, String] & Impure = 
+    /// Should not contain whitespace
+    pub def hasNextToken(sc: PrimitiveScanner, s: String): Result[Bool, String] & Impure = 
         hasNextMatch(sc, quoteLiteral(s))
 
-    pub def nextString(sc: PrimitiveScanner, s: String): Result[String, String] & Impure = 
+    /// Should not contain whitespace
+    pub def nextToken(sc: PrimitiveScanner, s: String): Result[String, String] & Impure = 
         nextMatch(sc, quoteLiteral(s))
 
     pub def skip(sc: PrimitiveScanner, pattern: String): Result[Unit, String] & Impure = 
@@ -233,4 +234,19 @@ namespace TextScanner/Internal/PrimitiveScanner {
 
     pub def skipString(sc: PrimitiveScanner, s: String): Result[Unit, String] & Impure = 
         skip(sc, quoteLiteral(s))
+
+    pub def findWithinHorizon(sc: PrimitiveScanner, pattern: String, horizon: Int32): Result[Option[String], String] & Impure=
+        import java.util.Scanner.findWithinHorizon(String, Int32);
+        let PrimitiveScanner(sc1) = sc;
+        try {
+            let s = sc1.findWithinHorizon(pattern, horizon);
+            if (isNull(s)) 
+                Ok(None) 
+            else 
+                Ok(Some(s))
+        } catch {
+            case _: ##java.lang.IllegalArgumentException => Err("Err - illegal argument")
+            case _: ##java.lang.IllegalStateException => Err("Err - scanner is closed")
+        }
+    
 }
