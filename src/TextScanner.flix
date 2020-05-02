@@ -15,6 +15,7 @@
  */
 
 use TextScanner/Internal.{PrimitiveScanner => PrimScanner};
+use Either.{mapLeft};
 
 namespace TextScanner {
 
@@ -28,10 +29,11 @@ namespace TextScanner {
         case POk(a)
     }
 
-    pub enum Scanner[ans] {
-        case Scanner(PrimScanner -> ParseResult[ans] & Impure)
+    pub enum Scanner[a] {
+        case Scanner(PrimScanner -> ParseResult[a] & Impure)
     }
 
+    
     pub def runWithString(ma: Scanner[a], s: String): Result[a, String] = 
         runWithStringHelper(ma, s) as & Pure
     
@@ -73,6 +75,14 @@ namespace TextScanner {
             }
         )
 
+    pub def select(ma: Scanner[Either[a,b]],  mf: Scanner[a -> b]): Scanner[b] = 
+        bind(ma,
+            e -> match e {
+                case Left(a) => map(f -> f(a), mf)
+                case Right(b) => return(b)
+            }
+        )
+
     pub def bind(ma: Scanner[a], k: a -> Scanner[b]): Scanner[b] = 
         Scanner(ps -> 
             let Scanner(f1) = ma;
@@ -87,6 +97,48 @@ namespace TextScanner {
 
     pub def flatMap(k: a -> Scanner[b], ma: Scanner[a]): Scanner[b] = bind(ma, k)
 
+    pub def when(ma: Scanner[Bool], mb: Scanner[Unit]): Scanner[Unit] = 
+        let selector = map(x -> if (x) Right(()) else Left(()), ma);
+        let effect   = map((a,_) -> a, mb);
+        select(selector, effect)
+
+    pub def branch(ma: Scanner[Either[a,b]], mleft: Scanner[a -> c], mright: Scanner[b -> c]): Scanner[c] = 
+        let* a = ma;
+        match a {
+            case Left(x) => ap(mleft, return(x))
+            case Right(y) => ap(mright, return(y))
+        }
+        
+    pub def ifS(ma: Scanner[Bool], mt: Scanner[a], mf: Scanner[a]): Scanner[a] = 
+        let* a = ma;
+        if (a) mt else mf
+
+    pub def or(ma: Scanner[Bool], mb: Scanner[Bool]): Scanner[Bool] = 
+        let* a = ma;
+        if (a) return(true) else mb
+
+
+    pub def and(ma: Scanner[Bool], mb: Scanner[Bool]): Scanner[Bool] = 
+        let* a = ma;
+        if (a) mb else return(false)
+
+    pub def fromOption(d: Scanner[a], ma: Scanner[Option[a]]): Scanner[a] = 
+        let* a = ma;
+        match a { 
+            case Some(x) => return(x)
+            case None => d
+        }
+
+    pub def any(p: a -> Scanner[Bool], xs: List[a]): Scanner[Bool] = 
+        List.foldRight((a,b) -> or(b, p(a)), return(false),  xs)
+
+    pub def all(p: a -> Scanner[Bool], xs: List[a]): Scanner[Bool] = 
+        List.foldRight((a,b) -> and(b, p(a)), return(true),  xs)
+
+
+    pub def while(s: Scanner[Bool]): Scanner[Unit] = 
+        let* a = s;
+        if (!a) return() else while(s)
 
     def liftHasNext(f: PrimScanner -> Bool & Impure): Scanner[Bool] = 
         Scanner(ps -> POk(f(ps)))
