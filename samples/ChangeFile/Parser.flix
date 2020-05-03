@@ -17,8 +17,8 @@
 use Time.LocalDateTime;
 
 use TextScanner.Scanner;
-use TextScanner.{return, map, throwError, seqLeft, seqRight, next, nextLine, nextInt32, nextMatch, 
-                    anchorString, findStringInLine,  nextLiteral, liftResult, manyWhileSome};
+use TextScanner.{return, map, throwError, seqLeft, seqRight, next, nextLine, hasNextLine, nextInt32, nextMatch, 
+                    anchorString, findStringInLine,  nextLiteral, liftResult, manyWhileSome, manyWhileTrue, scanLine};
 
 use ChangeFile/Datatypes.{FileType, DataModel, EntityType, Headers, Selection, DataRow, FileHeader, ChangeFile};
 use ChangeFile/Datatypes.FileType.{Download, Upload};
@@ -117,37 +117,26 @@ namespace ChangeFile/Parser {
         let* xs = pSelectionLines();
         return(Selection(xs))
     
-    // def pColumnName(): Parser[String] = 
-    //     manyChars2(
-    //         upper(),
-    //         choice(upper() :: char('_') :: digit() :: Nil)
-    //     ) |> nestError("ColumnName")
 
-    // pub def pColumnHeaders(): Parser[Headers] = 
-    //     use TextParser.flatMap;
-    //     let inner = {
-    //         let* _ = char('*');
-    //         let* xs = sepBy(pColumnName(), tab());
-    //         let* _ = endOfLine();
-    //         return(Headers(xs))
-    //     };
-    //     inner |> nestError("ColumnHeaders") 
+    pub def pColumnHeaders(): Scanner[Headers] = 
+        use TextScanner.flatMap;
+        let* str = asterisk() `seqRight` nextLine();
+        return(Headers(String.splitOn(str, "\t")))
 
-    // def pCellValue(): Parser[String] = 
-    //     manyChars(noneOf('\t' :: '\r' :: '\n' :: Nil))
-    //         |> swapError("cellValue")
-
-    // pub def pDataRow(): Parser[DataRow] = 
-    //      map(DataRow, endBy(pCellValue(), tab())) |> swapError("valueRow")
+    
+    pub def pDataRow(): Scanner[DataRow] = 
+        use TextScanner.flatMap;
+        let* str = nextLine();
+        return(DataRow(String.splitOn(str, "\t")))
 
 
-    // pub def pChangeFile(): Parser[ChangeFile] = 
-    //     use TextParser.flatMap;
-    //     let* hdr = pHeader();
-    //     let* sel = pSelection();
-    //     let* cols = pColumnHeaders();
-    //     let* rows = manyTill(pDataRow(), TextParser.endOfInput());
-    //     return({ fileHeader = hdr, selection = sel, headers = cols, dataRows = rows })
+    pub def pChangeFile(): Scanner[ChangeFile] = 
+        use TextScanner.flatMap;
+        let* hdr = pHeader();
+        let* sel = pSelection();
+        let* cols = pColumnHeaders();
+        let* rows = manyWhileTrue(hasNextLine(), pDataRow());
+        return({ fileHeader = hdr, selection = sel, headers = cols, dataRows = rows })
 
 
 }

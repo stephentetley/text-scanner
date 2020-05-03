@@ -8,10 +8,10 @@ use TextScanner.{Scanner, parseString, seqRight, nextLiteral, nextLine, map, nex
 
 
 @test
-def test01(): Result[ChangeFile/Datatypes.FileHeader, String] & Impure = 
+def test01(): Result[ChangeFile/Datatypes.ChangeFile, String] & Impure = 
     let src = 
         "G:\work\Projects\assets\asset_patch\file_download_edm\car36_outstation_valuaequi.txt" |> System/FilePath.new;
-    match TextScanner.parseFile(ChangeFile/Parser.pHeader(), src, System/Charset.utf_8() ) { 
+    match TextScanner.parseFile(ChangeFile/Parser.pChangeFile(), src, System/Charset.utf_8() ) { 
         case Err(e) => Err(e)
         case Ok(a) => Ok(a)
     }
