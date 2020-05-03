@@ -216,7 +216,7 @@ namespace TextScanner {
             case None => return(k(Nil))
             case Some(b) => { 
                 let* x = r(b);
-                manyWhileSomeHelper(p, r, xs -> x :: xs)
+                manyWhileSomeHelper(p, r, xs -> k(x :: xs))
             }
         } 
              
@@ -230,7 +230,7 @@ namespace TextScanner {
             return(k(Nil)) 
         else {
             let* x = r;
-            manyWhileTrueHelper(p, r, xs -> x :: xs)
+            manyWhileTrueHelper(p, r, xs -> k(x :: xs))
         }
 
     def getDelimiter(): Scanner[Pattern] = 

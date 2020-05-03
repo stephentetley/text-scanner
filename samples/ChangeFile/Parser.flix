@@ -18,8 +18,7 @@ use Time.LocalDateTime;
 
 use TextScanner.Scanner;
 use TextScanner.{return, map, throwError, seqLeft, seqRight, next, nextLine, hasNextLine, nextInt32, nextMatch, 
-                    anchorString, findStringInLine,  nextLiteral, liftResult, manyWhileSome, manyWhileTrue, scanLine,
-                    liftAction};
+                    anchorString, findStringInLine,  nextLiteral, liftResult, manyWhileSome, manyWhileTrue, scanLine};
 
 use ChangeFile/Datatypes.{FileType, DataModel, EntityType, Headers, Selection, DataRow, FileHeader, ChangeFile};
 use ChangeFile/Datatypes.FileType.{Download, Upload};
@@ -32,15 +31,15 @@ use ChangeFile/Datatypes.DataRow.{DataRow};
 
 namespace ChangeFile/Parser {
 
-    pub def asterisk(): Scanner[Unit] =  
+    def asterisk(): Scanner[Unit] =  
         nextLiteral("*")
     
-    pub def commentNameValue(name: String, sc: Scanner[a]): Scanner[a] = 
+    def commentNameValue(name: String, sc: Scanner[a]): Scanner[a] = 
         use TextScanner.flatMap;
         let* _ = anchorString(name + ":");
         sc
 
-    pub def pFileType(): Scanner[FileType] = 
+    def pFileType(): Scanner[FileType] = 
         use TextScanner.flatMap;
         let* _ = asterisk();
         let* s = next();
@@ -51,12 +50,12 @@ namespace ChangeFile/Parser {
         }
         
 
-    pub def pDataModel(): Scanner[DataModel] = 
+    def pDataModel(): Scanner[DataModel] = 
         let u1 = nextLiteral("U1") `seqRight` return(U1);
         commentNameValue("Data Model",  u1)
         
 
-    pub def pEntityType(): Scanner[EntityType] =
+    def pEntityType(): Scanner[EntityType] =
         use TextScanner.flatMap;
         let body = () -> {
             let* s = next();
@@ -74,15 +73,13 @@ namespace ChangeFile/Parser {
         };
         commentNameValue("Entity Type", body())
 
-
-
-    pub def pVariant(): Scanner[String] = 
+    def pVariant(): Scanner[String] = 
         commentNameValue("Variant", nextLine())
     
-    pub def pUser(): Scanner[String] = 
+    def pUser(): Scanner[String] = 
         commentNameValue("User", nextLine())
 
-    pub def pDateTime(): Scanner[LocalDateTime] = 
+    def pDateTime(): Scanner[LocalDateTime] = 
         use TextScanner.flatMap;
         let* d = anchorString("Date:") `seqRight` nextMatch("\d+");
         let* _ = nextLiteral("/");
@@ -92,7 +89,7 @@ namespace ChangeFile/Parser {
         return(ans)
         
 
-    pub def pHeader(): Scanner[FileHeader] = 
+    def pHeader(): Scanner[FileHeader] = 
         use TextScanner.flatMap;
         let* ft = pFileType();
         let* dm = pDataModel();
@@ -103,13 +100,13 @@ namespace ChangeFile/Parser {
         return({ fileType = ft, dataModel = dm, entityType = et, 
                     variant = v, user = u, dateTime = dt })
 
-    pub def pSelectionHeader(): Scanner[Unit] = 
+    def pSelectionHeader(): Scanner[Unit] = 
          anchorString("Selection:") `seqLeft` nextLine()
 
-    pub def pSelectionLines(): Scanner[List[String]] = 
+    def pSelectionLines(): Scanner[List[String]] = 
         manyWhileSome(findStringInLine("* "), _ -> nextLine())
 
-    pub def pSelection(): Scanner[Selection] = 
+    def pSelection(): Scanner[Selection] = 
         use TextScanner.flatMap;
         let* _ = pSelectionHeader();
         let* xs = pSelectionLines();
@@ -117,26 +114,23 @@ namespace ChangeFile/Parser {
     
     /// Note - the first header is prefixed by an asterisk, we can't use `asterisk` to find this 
     /// because `asterisk` can only see a token and there is no whitespace.
-    pub def pColumnHeaders(): Scanner[Headers] = 
+    def pColumnHeaders(): Scanner[Headers] = 
         use TextScanner.flatMap;
         let* h1 = map(s -> String.dropLeft(1, s), next());
-        let* _ = liftAction(_ -> Console.printLine("h1: <" + h1 + ">"));
         let* str = nextLine();
-        let* _ = liftAction(_ -> Console.printLine("ColumnHeaders of: " + h1 + " " + str));
-        return(Headers(h1 :: String.splitOn(str, "\t")))
+        return(Headers(h1 :: String.splitOn(String.trim(str), Char.toString('\u0009'))))
 
     
-    pub def pDataRow(): Scanner[DataRow] = 
+    def pDataRow(): Scanner[DataRow] = 
         use TextScanner.flatMap;
         let* str = nextLine();
-        return(DataRow(String.splitOn(str, "\t")))
+        return(DataRow(String.splitOn(String.trimRight(str), Char.toString('\u0009'))))
 
 
     pub def pChangeFile(): Scanner[ChangeFile] = 
         use TextScanner.flatMap;
         let* hdr = pHeader();
-        let* sel = pSelection();
-        let* _ = liftAction(_ -> Console.printLine("After pSelection"));
+        let* sel = pSelection();        
         let* cols = pColumnHeaders();
         let* rows = manyWhileTrue(hasNextLine(), pDataRow());
         return({ fileHeader = hdr, selection = sel, headers = cols, dataRows = rows })
