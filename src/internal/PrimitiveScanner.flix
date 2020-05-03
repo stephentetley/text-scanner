@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-use TextScanner/Internal.PrimitiveScanner;
+use TextScanner/Internal.{PrimitiveScanner, Pattern};
 use TextScanner/Internal.PrimitiveScanner.{PrimitiveScanner};
+use TextScanner/Internal.Pattern.{Pattern};
 
 namespace TextScanner/Internal {
 
     pub opaque type PrimitiveScanner = ##java.util.Scanner
+
+    pub opaque type Pattern = ##java.util.regex.Pattern
 
 }
 
@@ -36,6 +39,26 @@ namespace TextScanner/Internal/PrimitiveScanner {
         import java.util.Scanner.close();
         let PrimitiveScanner(sc1) = sc;
         sc1.close()
+
+    pub def compilePattern(patt: String): Result[Pattern, String] = 
+        import java.util.regex.Pattern:compile(String);
+        try {
+            Ok(Pattern(compile(patt))) as & Pure
+        } catch {
+            case _: ##java.util.regex.PatternSyntaxException => Err("Err - Invalid Pattern")
+        }
+
+    pub def getDelimiter(sc: PrimitiveScanner): Pattern & Impure = 
+        import java.util.Scanner.delimiter();
+        let PrimitiveScanner(sc1) = sc;
+        Pattern(sc1.delimiter())
+
+    pub def setDelimiter(sc: PrimitiveScanner, pattern: Pattern): Unit & Impure = 
+        import java.util.Scanner.useDelimiter(##java.util.regex.Pattern);
+        let PrimitiveScanner(sc1) = sc;
+        let Pattern(p1) = pattern;
+        let _  = sc1.useDelimiter(p1);
+        ()
 
     pub def hasNext(sc: PrimitiveScanner): Bool & Impure = 
         import java.util.Scanner.hasNext();

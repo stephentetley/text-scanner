@@ -26,10 +26,10 @@ def test02(): Result[ChangeFile/Datatypes.FileType, String] & Impure =
     }
 
 @test
-def test03(): Result[String, String] & Impure = 
+def test03(): Result[ChangeFile/Datatypes.Selection, String] & Impure = 
     let src = 
         "G:\work\Projects\assets\asset_patch\file_download_edm\car36_outstation_valuaequi.txt" |> System/FilePath.new;
-    match TextScanner.parseFile(ChangeFile/Parser.pFileType() `seqRight` nextLine(), src, System/Charset.utf_8() ) { 
+    match TextScanner.parseFile(ChangeFile/Parser.pHeader() `seqRight` ChangeFile/Parser.pSelection(), src, System/Charset.utf_8() ) { 
         case Err(e) => Err(e)
         case Ok(a) => Ok(a)
     }

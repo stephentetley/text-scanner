@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-use TextScanner/Internal.{PrimitiveScanner => PrimScanner};
+use TextScanner/Internal.{PrimitiveScanner => PrimScanner, Pattern};
+use TextScanner/Internal.Pattern.{Pattern};
 use TextScanner/Internal/PrimitiveScanner.{quoteLiteral};
 use Either.{mapLeft};
 
@@ -128,7 +129,7 @@ namespace TextScanner {
 
     pub def flatMap(k: a -> Scanner[b], ma: Scanner[a]): Scanner[b] = bind(ma, k)
 
-    pub def seqLeft(ma :Scanner[a], mb: Scanner[b]): Scanner[a] = 
+    pub def seqLeft(ma: Scanner[a], mb: Scanner[b]): Scanner[a] = 
         let* a = ma;
         let* _ = mb;
         return(a)
@@ -177,6 +178,13 @@ namespace TextScanner {
             case None => throwError("fromSome")
         }
 
+    // pub def someSeqRight(ma: Scanner[Option[a]], mb: Scanner[b]): Scanner[Option[b]] = 
+    //     let* a = ma;
+    //     match a { 
+    //         case Some(_) => { let* b = mb; return(Some(b)) }
+    //         case None => return(None)
+    //     }
+
     pub def liftResult(x: Result[t, String]): Scanner[t] =
         match x { 
             case Ok(a) => return(a)
@@ -198,6 +206,59 @@ namespace TextScanner {
         let* a = s;
         if (!a) return() else while(s)
 
+
+    pub def manyWhileSome(p: Scanner[Option[a]], r: a -> Scanner[b]): Scanner[List[b]] = 
+        manyWhileSomeHelper(p, r, xs -> xs)
+
+    pub def manyWhileSomeHelper(p: Scanner[Option[a]], r: a -> Scanner[b], k: List[b] -> List[b]): Scanner[List[b]] = 
+        let* a = p;
+        match a { 
+            case None => return(k(Nil))
+            case Some(b) => { 
+                let* x = r(b);
+                manyWhileSomeHelper(p, r, xs -> x :: xs)
+            }
+        } 
+             
+
+    pub def manyWhileTrue(p: Scanner[Bool], r: Scanner[a]): Scanner[List[a]] = 
+        manyWhileTrueHelper(p, r, xs -> xs)
+
+    pub def manyWhileTrueHelper(p: Scanner[Bool], r: Scanner[a], k: List[a] -> List[a]): Scanner[List[a]] = 
+        let* a = p;
+        if (!a) 
+            return(k(Nil)) 
+        else {
+            let* x = r;
+            manyWhileTrueHelper(p, r, xs -> x :: xs)
+        }
+
+    def getDelimiter(): Scanner[Pattern] = 
+        Scanner(ps -> POk(TextScanner/Internal/PrimitiveScanner.getDelimiter(ps)))
+
+    def setDelimiter(patt: Pattern): Scanner[Unit] = 
+        Scanner(ps -> POk(TextScanner/Internal/PrimitiveScanner.setDelimiter(ps, patt)))
+    
+    pub def withDelimiter(pattern: String, s: Scanner[a]): Scanner[a] =         
+        let* oldpatt = getDelimiter();
+        let* newpatt = liftResult(TextScanner/Internal/PrimitiveScanner.compilePattern(pattern));
+        let* _ = setDelimiter(newpatt);
+        let* ans = s;
+        let* _ = setDelimiter(oldpatt);
+        return(ans)
+
+
+    pub def scanLine(delimiter: Option[String], s:Scanner[a]): Scanner[a] = 
+        let* line1 = nextLine();
+        let* delim = match delimiter { 
+            case None => getDelimiter()
+            case Some(patt) => liftResult(TextScanner/Internal/PrimitiveScanner.compilePattern(patt))
+        };
+        match parseString(setDelimiter(delim) `seqRight` s, line1) {
+            case Ok(a) => return(a)
+            case Err(msg) => throwError(msg)
+        }
+        
 
     pub def countWhile(s: Scanner[Bool]): Scanner[Int32] = 
         countWhileHelper(s, 0)
@@ -348,6 +409,8 @@ namespace TextScanner {
     pub def findStringInLine(s: String): Scanner[Option[Unit]] = 
         findMatchInLine(quoteLiteral(s)) |> map(Option.map(_ -> ()))
 
+
+    
     pub def anchorMatchInLine(pattern: String): Scanner[String] = 
         let* a = findMatchInLine(pattern);
         match a { 

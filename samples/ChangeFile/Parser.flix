@@ -17,7 +17,8 @@
 use Time.LocalDateTime;
 
 use TextScanner.Scanner;
-use TextScanner.{return, map, throwError, seqRight, next, nextLine, nextInt32, nextMatch, anchorString, nextLiteral, liftResult};
+use TextScanner.{return, map, throwError, seqLeft, seqRight, next, nextLine, nextInt32, nextMatch, 
+                    anchorString, findStringInLine,  nextLiteral, liftResult, manyWhileSome};
 
 use ChangeFile/Datatypes.{FileType, DataModel, EntityType, Headers, Selection, DataRow, FileHeader, ChangeFile};
 use ChangeFile/Datatypes.FileType.{Download, Upload};
@@ -104,21 +105,18 @@ namespace ChangeFile/Parser {
         return({ fileType = ft, dataModel = dm, entityType = et, 
                     variant = v, user = u, dateTime = dt })
 
-    // pub def pSelectionHeader(): Parser[Unit] = 
-    //     pCommentLine(nameValue("Selection", restOfLine(false))) |> ignore
+    pub def pSelectionHeader(): Scanner[Unit] = 
+         anchorString("Selection:") `seqLeft` nextLine()
 
-    // pub def pSelectionLine(): Parser[String] = 
-    //     pCommentLine(restOfLine(false))
+    pub def pSelectionLines(): Scanner[List[String]] = 
+        manyWhileSome(findStringInLine("* "), _ -> nextLine())
 
-    // pub def pSelection(): Parser[Selection] = 
-    //     use TextParser.flatMap;
-    //     let inner = {
-    //         let* _ = pSelectionHeader();
-    //         let* xs = many(pSelectionLine());
-    //         return(Selection(xs))
-    //     };
-    //     inner |> nestError("selection")
-
+    pub def pSelection(): Scanner[Selection] = 
+        use TextScanner.flatMap;
+        let* _ = pSelectionHeader();
+        let* xs = pSelectionLines();
+        return(Selection(xs))
+    
     // def pColumnName(): Parser[String] = 
     //     manyChars2(
     //         upper(),
