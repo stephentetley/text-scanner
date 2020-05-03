@@ -1,20 +1,23 @@
 use TextScanner.{Scanner, parseString, seqRight, nextLiteral, nextLine, map, next, anchorStringInLine};
+use TextScanner/Internal/Utils.{timeOperationNanos};
 
-// def runOrError(p: Scanner[a], f: a -> String, inp: String): String = 
-//     match TextParser.run(p, inp) { 
-//         case Ok(a) => f(a)
-//         case Err(msg) => "*** ERROR: " + msg
-//     }
+pub def runTimed(operation: () -> a & e): a & Impure =         
+        let (nt, a) = timeOperationNanos(operation) as & Impure;
+        let msg = "Time: ${ Int64.toString(nt) }";
+        Console.printLine(msg);
+        a
 
 
 @test
 def test01(): Result[ChangeFile/Datatypes.ChangeFile, String] & Impure = 
     let src = 
         "G:\work\Projects\assets\asset_patch\file_download_edm\car36_outstation_valuaequi.txt" |> System/FilePath.new;
-    match TextScanner.parseFile(ChangeFile/Parser.pChangeFile(), src, System/Charset.utf_8() ) { 
-        case Err(e) => Err(e)
-        case Ok(a) => Ok(a)
-    }
+    let work = () -> 
+        match TextScanner.parseFile(ChangeFile/Parser.pChangeFile(), src, System/Charset.utf_8() ) { 
+            case Err(e) => Err(e)
+            case Ok(a) => Ok(a)
+        };
+    runTimed(work)
         
 @test
 def test02(): Result[ChangeFile/Datatypes.FileType, String] & Impure = 

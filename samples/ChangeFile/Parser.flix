@@ -18,7 +18,8 @@ use Time.LocalDateTime;
 
 use TextScanner.Scanner;
 use TextScanner.{return, map, throwError, seqLeft, seqRight, next, nextLine, hasNextLine, nextInt32, nextMatch, 
-                    anchorString, findStringInLine,  nextLiteral, liftResult, manyWhileSome, manyWhileTrue, scanLine};
+                    anchorString, findStringInLine,  nextLiteral, liftResult, manyWhileSome, manyWhileTrue, scanLine,
+                    liftAction};
 
 use ChangeFile/Datatypes.{FileType, DataModel, EntityType, Headers, Selection, DataRow, FileHeader, ChangeFile};
 use ChangeFile/Datatypes.FileType.{Download, Upload};
@@ -82,13 +83,10 @@ namespace ChangeFile/Parser {
         commentNameValue("User", nextLine())
 
     pub def pDateTime(): Scanner[LocalDateTime] = 
-        use TextScanner.liftAction;
         use TextScanner.flatMap;
-        let* _ = liftAction(_ -> Console.printLine("HERE"));
         let* d = anchorString("Date:") `seqRight` nextMatch("\d+");
         let* _ = nextLiteral("/");
         let* t = nextLiteral("Time:")  `seqRight` nextMatch("\d+");
-        let* _ = liftAction(_ -> Console.printLine("DEBUG:" + d + " " + t));
         let* patt = liftResult(Time/Format/DateTimeFormatter.fromPattern("yyyyMMdd HHmmss"));
         let* ans = liftResult(Time/LocalDateTime.fromStringWithFormat(d + " " + t, patt));
         return(ans)
@@ -117,11 +115,15 @@ namespace ChangeFile/Parser {
         let* xs = pSelectionLines();
         return(Selection(xs))
     
-
+    /// Note - the first header is prefixed by an asterisk, we can't use `asterisk` to find this 
+    /// because `asterisk` can only see a token and there is no whitespace.
     pub def pColumnHeaders(): Scanner[Headers] = 
         use TextScanner.flatMap;
-        let* str = asterisk() `seqRight` nextLine();
-        return(Headers(String.splitOn(str, "\t")))
+        let* h1 = map(s -> String.dropLeft(1, s), next());
+        let* _ = liftAction(_ -> Console.printLine("h1: <" + h1 + ">"));
+        let* str = nextLine();
+        let* _ = liftAction(_ -> Console.printLine("ColumnHeaders of: " + h1 + " " + str));
+        return(Headers(h1 :: String.splitOn(str, "\t")))
 
     
     pub def pDataRow(): Scanner[DataRow] = 
@@ -134,6 +136,7 @@ namespace ChangeFile/Parser {
         use TextScanner.flatMap;
         let* hdr = pHeader();
         let* sel = pSelection();
+        let* _ = liftAction(_ -> Console.printLine("After pSelection"));
         let* cols = pColumnHeaders();
         let* rows = manyWhileTrue(hasNextLine(), pDataRow());
         return({ fileHeader = hdr, selection = sel, headers = cols, dataRows = rows })

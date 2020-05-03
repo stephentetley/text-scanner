@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-use TextScanner/Internal/Utils.timeOperation;
+use TextScanner/Internal/Utils.timeOperationNanos;
 use TextScanner.{Scanner, runWithString, return, map, countWhile, ifS, seqRight, hasNextLine, nextLine};
 
 /// Very simple parser to count lines.
@@ -22,7 +22,7 @@ use TextScanner.{Scanner, runWithString, return, map, countWhile, ifS, seqRight,
 namespace LineCount {
 
     pub def runLineCounter(header: String, counter: String -> Int32 & e, s: String): Unit & Impure =         
-        let (nt, a) = timeOperation(_ -> counter(s)) as & Impure;
+        let (nt, a) = timeOperationNanos(_ -> counter(s)) as & Impure;
         let msg = "Time: ${ Int64.toString(nt) }, lines: ${Int32.toString(a)}";
         Console.printLine(header);
         Console.printLine(msg)

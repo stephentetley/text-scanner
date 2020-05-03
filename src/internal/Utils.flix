@@ -18,11 +18,18 @@
 
 namespace TextScanner/Internal/Utils {
 
-    pub def timeOperation(thunk: Unit -> a & e): (Int64, a) & Impure = 
+    pub def timeOperationNanos(thunk: Unit -> a & e): (Int64, a) & Impure = 
         import java.lang.System:nanoTime();
         let t0 = nanoTime();
         let a = thunk() as & Impure;
         let t1 = nanoTime();
+        (t1 - t0, a)
+
+    pub def timeOperationMillis(thunk: Unit -> a & e): (Int64, a) & Impure = 
+        import java.lang.System:currentTimeMillis();
+        let t0 = currentTimeMillis();
+        let a = thunk() as & Impure;
+        let t1 = currentTimeMillis();
         (t1 - t0, a)
 
 }
