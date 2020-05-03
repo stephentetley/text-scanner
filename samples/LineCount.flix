@@ -15,7 +15,7 @@
  */
 
 use TextScanner/Internal/Utils.timeOperationNanos;
-use TextScanner.{Scanner, runWithString, return, map, countWhile, ifS, seqRight, hasNextLine, nextLine};
+use TextScanner.{Scanner, parseString, return, map, countWhile, ifS, seqRight, hasNextLine, nextLine};
 
 /// Very simple parser to count lines.
 
@@ -42,7 +42,7 @@ namespace LineCount {
                 lineCount01Helper(s, len, count, ix + 1)
 
     pub def lineCount02(s: String): Int32 = 
-        match runWithString(scannerLC(), s) { 
+        match parseString(scannerLC(), s) { 
             case Ok(i) => i
             case Err(_) => -1
         }
