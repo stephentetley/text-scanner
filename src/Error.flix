@@ -14,25 +14,19 @@
  * limitations under the License.
  */
 
-enum Either[a, b] {
-    case Left(a),
-    case Right(b)
-}
 
-namespace Either {
 
-    pub def either(f: a -> b, g: b -> c, x: Either[a, b]): c = match x {
-        case Left(a) => f(a)
-        case Right(b) => g(b)
+namespace TextScanner {
+
+
+    pub enum Error { 
+        case IOError,
+        case IllegalArgumentException,
+        case IllegalStateException,
+        case InputMismatchException, 
+        case NoSuchElementException,
+        case PatternSyntaxException,
+        case Generic(String)
     }
 
-    pub def mapLeft(f: a -> c, x: Either[a, b]): Either[c, b] = match x {
-        case Left(a) => Left(f(a))
-        case Right(b) => Right(b)
-    }
-
-    pub def mapRight(g: b -> c, x: Either[a ,b]): Either[a, c] = match x {
-        case Left(a) => Left(a)
-        case Right(b) => Right(g(b))
-    }
 }

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+use TextScanner.Error.{Generic};
 use TextScanner/Internal.{PrimitiveScanner => PrimScanner, Pattern};
 use TextScanner/Internal.Pattern.{Pattern};
 use TextScanner/Internal/PrimitiveScanner.{quoteLiteral};
@@ -23,11 +24,12 @@ namespace TextScanner {
 
     type alias ErrMsg = String
 
+
     /// We define our own result type to remind us that a single error is fatal.
     /// Because java.util.Scanner does not allow backtracking we cannot implement
     /// an `alt` combinator. 
     enum ParseResult[a] {
-        case PFatal(String, String),
+        case PFatal(TextScanner.Error, String),
         case POk(a)
     }
 
@@ -47,23 +49,26 @@ namespace TextScanner {
         case Scanner(PrimScanner -> ParseResult[a] & Impure)
     }
 
+    pub enum ScannerError {
+        case ScannerError(TextScanner.Error, String)
+    }
     
-    pub def parseString(ma: Scanner[a], s: String): Result[a, String] = 
+    pub def parseString(ma: Scanner[a], s: String): Result[a, ScannerError] = 
         parseStringHelper(ma, s) as & Pure
     
-    def parseStringHelper(ma: Scanner[a], s: String): Result[a, String] & Impure = 
+    def parseStringHelper(ma: Scanner[a], s: String): Result[a, ScannerError] & Impure = 
         let Scanner(f1) = ma;
         let ps = TextScanner/Internal/PrimitiveScanner.fromString(s);
         let ans = f1(ps);
         TextScanner/Internal/PrimitiveScanner.close(ps);        
         match ans {
             case POk(a) => Ok(a)
-            case PFatal(msg, rest) => Err(msg + String.lineSeparator() + "Input:" + String.lineSeparator() + rest)
+            case PFatal(e, rest) => Err(ScannerError(e, rest))
         }
 
-    pub def parseFile(s: Scanner[a], path: System.FilePath, cs: System.Charset): Result[a, String] & Impure = 
+    pub def parseFile(s: Scanner[a], path: System.FilePath, cs: Text.Charset): Result[a, ScannerError] & Impure = 
         match System/File.readFile(path, cs) {
-            case Err(_) => Err("File error")
+            case Err(_) => Err(ScannerError(IOError, ""))
             case Ok(text) => parseString(s, text)
         }
 
@@ -71,13 +76,16 @@ namespace TextScanner {
         Scanner(_ -> POk(x) as & Impure)
 
     pub def throwError(msg: String): Scanner[a] = 
-        Scanner(ps -> PFatal(msg, nextThreeLines(ps)) as & Impure)
+        throwError1(Generic(msg))
+
+    def throwError1(e: TextScanner.Error): Scanner[a] = 
+        Scanner(ps -> PFatal(e, nextThreeLines(ps)) as & Impure)
 
     pub def swapError(msg: String, ma: Scanner[a]): Scanner[a] = 
         Scanner(ps -> 
             let Scanner(f1) = ma;
             match f1(ps) {
-                case PFatal(_, rest) => PFatal(msg, rest)
+                case PFatal(_, rest) => PFatal(Generic(msg), rest)
                 case POk(a) => POk(a)
             }
         )
@@ -185,11 +193,13 @@ namespace TextScanner {
     //         case None => return(None)
     //     }
 
-    pub def liftResult(x: Result[t, String]): Scanner[t] =
-        match x { 
-            case Ok(a) => return(a)
-            case Err(msg) => throwError(msg)
-        }
+    pub def liftResult(x: Result[t, TextScanner.Error]): Scanner[t] =
+        Scanner(ps ->         
+            match x { 
+                case Ok(a) => POk(a)
+                case Err(e) => PFatal(e, nextThreeLines(ps)) 
+            } as & Impure
+        )
 
     pub def liftAction( f: () -> Unit & Impure): Scanner[Unit] =
         Scanner(_ -> { f(); POk() })
@@ -256,7 +266,9 @@ namespace TextScanner {
         };
         match parseString(setDelimiter(delim) `seqRight` s, line1) {
             case Ok(a) => return(a)
-            case Err(msg) => throwError(msg)
+            case Err(e) => match e { 
+                case ScannerError(e1, _) => throwError1(e1)
+            }
         }
         
 
@@ -281,15 +293,15 @@ namespace TextScanner {
     def liftPrimHasNext(f: PrimScanner -> Bool & Impure): Scanner[Bool] = 
         Scanner(ps -> POk(f(ps)))
 
-    def liftPrimNext(f: PrimScanner -> Result[a, String] & Impure): Scanner[a] = 
+    def liftPrimNext(f: PrimScanner -> Result[a, TextScanner.Error] & Impure): Scanner[a] = 
         Scanner(ps -> 
             match f(ps) {
                 case Ok(a) => POk(a)
-                case Err(msg) => PFatal(msg, nextThreeLines(ps))
+                case Err(e) => PFatal(e, nextThreeLines(ps))
             }
         )
 
-    def liftPrimHasNextResult(f: PrimScanner -> Result[Bool, String] & Impure): Scanner[Bool] = 
+    def liftPrimHasNextResult(f: PrimScanner -> Result[Bool, TextScanner.Error] & Impure): Scanner[Bool] = 
         liftPrimNext(f) 
 
     pub def hasNext(): Scanner[Bool] = 
@@ -429,7 +441,7 @@ namespace TextScanner {
             countHelper(ps, n, f1, 0, (s,t) -> PFatal(s,t), xs -> POk(xs))
         )
 
-    def countHelper(ps: PrimScanner, n: Int32, f1: PrimScanner -> ParseResult[a] & Impure, i: Int32, fk: (ErrMsg, String) -> ParseResult[List[a]], sk: List[a] -> ParseResult[List[a]]): ParseResult[List[a]] & Impure = 
+    def countHelper(ps: PrimScanner, n: Int32, f1: PrimScanner -> ParseResult[a] & Impure, i: Int32, fk: (Error, String) -> ParseResult[List[a]], sk: List[a] -> ParseResult[List[a]]): ParseResult[List[a]] & Impure = 
         if (i >= n) 
             sk(Nil)
         else {
