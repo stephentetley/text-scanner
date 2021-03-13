@@ -1,8 +1,10 @@
-# text-scanner
+# text-scanner - obsolete
 
-Now obsolete... the alternative project Text-Parser is now fast enough for "real world" use.
+Now obsolete... the alternative project FlixParsec is now fast enough for "real world" use.
 
-https://github.com/stephentetley/text-parser
+https://github.com/stephentetley/flix-parsec
+
+Old readme...
 
 Experimental parser / scanner combinator library for Flix based on `java.util.Scanner`.
 
